@@ -11,7 +11,6 @@ import (
 	"time"
 	"strings"
 	"github.com/joho/godotenv"
-	"github.com/m1guelpf/chatgpt-telegram/src/chatgpt"
 	"github.com/m1guelpf/chatgpt-telegram/src/config"
 	"github.com/m1guelpf/chatgpt-telegram/src/session"
 	"github.com/m1guelpf/chatgpt-telegram/src/tgbot"
@@ -80,50 +79,56 @@ func main() {
 		}
 
 		var (
-//			updateText      = update.Message.Text
+			updateText      = update.Message.Text
 			updateChatID    = update.Message.Chat.ID
 			updateMessageID = update.Message.MessageID
 		)
 
 		userId := strconv.FormatInt(update.Message.Chat.ID, 10)
 		whiteLists := strings.Split(os.Getenv("TELEGRAM_ID"), ",")
-		log.Printf("[Chat ID] %s", userId)
 		if !(len(whiteLists) == 1 && whiteLists[0] == "") && !contains(whiteLists, userId) {
-			bot.Send(updateChatID, updateMessageID, "No estás autorizado para usar este bot | You are not authorized to use this bot.")
+			bot.Send(updateChatID, updateMessageID, "You are not authorized to use this bot.")
 			continue
 		}
 
-		if !update.Message.IsCommand(){
-			if (update.Message.Chat.IsPrivate() || ((update.Message.Chat.IsGroup() || update.Message.Chat.IsSuperGroup()) && strings.HasPrefix(update.Message.Text, "@" + bot.Username))) {
-				file,err := bot.GetFileDirectURL(update.Message.Voice.FileID)
-				if err != nil{
-					fmt.Sprintf("Error: %v", err)
-				}else{
-					bot.SendTyping(updateChatID)
-					cmd := exec.Command("python3", "./whisperAudio.py", file)
-					stdout,err := cmd.Output()
-					if err != nil {
-						fmt.Println(err.Error())
-						continue
-    					}
-					bot.Send(updateChatID, updateMessageID, string(stdout))
-				}
-				continue
-			}else{
+		if !update.Message.IsCommand() && update.Message.Chat.IsPrivate() {
+			log.Printf("UserID: %s (%d)", update.Message.Chat.UserName, updateChatID)
+			if updateText != "" {
+				bot.Send(updateChatID, updateMessageID, "\xF0\x9F\x98\x85 Sorry! Voice notes only...")
 				continue
 			}
+			file,err := bot.GetFileDirectURL(update.Message.Voice.FileID)
+			if err != nil{
+				fmt.Sprintf("Error: %v", err)
+			}else{
+				bot.SendTyping(updateChatID)
+				message,err := bot.Send(updateChatID, updateMessageID, "Received! This will take some time... \xE2\x8F\xB3")
+				if err != nil {
+                                        fmt.Println(err.Error())
+                                        continue
+                                }
+				cmd := exec.Command("python3", "./whisperAudio.py", file)
+				stdout,err := cmd.Output()
+				if err != nil {
+					fmt.Println(err.Error())
+					continue
+				}
+				bot.SendEdit(updateChatID, message.MessageID, string(stdout))
+				bot.Send(updateChatID, 0, "Done! \xF0\x9F\x8E\x89")
+			}
+			continue
+		}else{
+			continue
 		}
 
 		var text string
 		switch update.Message.Command() {
 		case "help":
-			text = "Envía un mensaje para empezar a hablar con ChatGPT. Puedes usar /reload en cualquier momento para empezar una nueva conversación desde cero (no se borrarán los mensajes de Telegram)."
+			text = "Send a voice note to be transcribed."
 		case "start":
-			text = "Envía un mensaje para empezar a hablar con ChatGPT. Puedes usar /reload en cualquier momento para empezar una nueva conversación desde cero (no se borrarán los mensajes de Telegram)."
-		case "reload":
-			text = "Nueva conversación empezada. ¡Disfruta!"
+			text = "Send a voice note to be transcribed."
 		default:
-			text = "Comando desconocido. Envía /help para ver una lista de comandos."
+			text = "Unknown command. Send /help to view the command list."
 		}
 
 		if _, err := bot.Send(updateChatID, updateMessageID, text); err != nil {

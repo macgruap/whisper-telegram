@@ -6,9 +6,7 @@ import (
 	"time"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/m1guelpf/chatgpt-telegram/src/chatgpt"
 	"github.com/m1guelpf/chatgpt-telegram/src/markdown"
-	"github.com/m1guelpf/chatgpt-telegram/src/ratelimit"
 )
 
 type Bot struct {
@@ -52,7 +50,9 @@ func (b *Bot) Stop() {
 func (b *Bot) Send(chatID int64, replyTo int, text string) (tgbotapi.Message, error) {
 	text = markdown.EnsureFormatting(text)
 	msg := tgbotapi.NewMessage(chatID, text)
-	msg.ReplyToMessageID = replyTo
+	if replyTo != 0 {
+		msg.ReplyToMessageID = replyTo
+	}
 	return b.api.Send(msg)
 }
 
@@ -72,45 +72,6 @@ func (b *Bot) SendEdit(chatID int64, messageID int, text string) error {
 func (b *Bot) SendTyping(chatID int64) {
 	if _, err := b.api.Request(tgbotapi.NewChatAction(chatID, "typing")); err != nil {
 		log.Printf("Couldn't send typing action: %v", err)
-	}
-}
-
-func (b *Bot) SendAsLiveOutput(chatID int64, replyTo int, feed chan chatgpt.ChatResponse) {
-	debouncedType := ratelimit.Debounce(10*time.Second, func() { b.SendTyping(chatID) })
-	debouncedEdit := ratelimit.DebounceWithArgs(b.editInterval, func(text interface{}, messageId interface{}) {
-		if err := b.SendEdit(chatID, messageId.(int), text.(string)); err != nil {
-			log.Printf("Couldn't edit message: %v", err)
-		}
-	})
-
-	var message tgbotapi.Message
-	var lastResp string
-
-pollResponse:
-	for {
-		debouncedType()
-
-		select {
-		case response, ok := <-feed:
-			if !ok {
-				break pollResponse
-			}
-
-			lastResp = response.Message
-
-			if message.MessageID == 0 {
-				var err error
-				if message, err = b.Send(chatID, replyTo, lastResp); err != nil {
-					log.Fatalf("Couldn't send message: %v", err)
-				}
-			} else {
-				debouncedEdit(lastResp, message.MessageID)
-			}
-		}
-	}
-
-	if err := b.SendEdit(chatID, message.MessageID, lastResp); err != nil {
-		log.Printf("Couldn't perform final edit on message: %v", err)
 	}
 }
 
