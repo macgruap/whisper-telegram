@@ -66,6 +66,7 @@ func main() {
 		whiteLists := strings.Split(os.Getenv("TELEGRAM_ID"), ",")
 		if !(len(whiteLists) == 1 && whiteLists[0] == "") && !contains(whiteLists, userId) {
 			bot.Send(updateChatID, updateMessageID, "You are not authorized to use this bot.")
+			log.Printf("%s (%d) blocked.", update.Message.Chat.UserName, updateChatID)
 			continue
 		}
 
