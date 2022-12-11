@@ -11,8 +11,6 @@ import (
 	"time"
 	"strings"
 	"github.com/joho/godotenv"
-	"github.com/m1guelpf/chatgpt-telegram/src/config"
-	"github.com/m1guelpf/chatgpt-telegram/src/session"
 	"github.com/m1guelpf/chatgpt-telegram/src/tgbot"
 )
 
@@ -26,27 +24,7 @@ func contains(s []string, e string) bool {
 }
 
 func main() {
-	config, err := config.Init()
-	if err != nil {
-		log.Fatalf("Couldn't load config: %v", err)
-	}
-
-	if config.OpenAISession == "" {
-		session, err := session.GetSession()
-		if err != nil {
-			log.Fatalf("Couldn't get OpenAI session: %v", err)
-		}
-
-		err = config.Set("OpenAISession", session)
-		if err != nil {
-			log.Fatalf("Couldn't save OpenAI session: %v", err)
-		}
-	}
-
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatalf("Couldn't load .env file: %v", err)
-	}
+	godotenv.Load()
 
 	editInterval := 1 * time.Second
 	if os.Getenv("EDIT_WAIT_SECONDS") != "" {
