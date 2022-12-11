@@ -2,7 +2,7 @@
 
 > Use Whisper to transcribe
 
-Go CLI to fuels a Telegram bot that lets you send voice notes to be transcribed using Whisper.
+Go CLI to fuel a Telegram bot that lets you send voice notes to be transcribed using OpenAI's Whisper.
 
 ## Installation
 After you cloned the repo, open the `env.example` file with a text editor and fill in your credentials. 
