@@ -11,6 +11,7 @@ After you cloned the repo, open the `env.example` file with a text editor and fi
 - `TELEGRAM_ID` (Optional): Your Telegram User ID
   - If you set this, only you will be able to interact with the bot.
   - To get your ID, message `@userinfobot` on Telegram.
+  - Multiple IDs can be provided, separated by commas.
 - Save the file, and rename it to `.env`.
 > **Note** Make sure you rename the file to _exactly_ `.env`! The program won't work otherwise.
 
