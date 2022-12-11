@@ -69,7 +69,8 @@ func main() {
 			continue
 		}
 
-		if !update.Message.IsCommand() && update.Message.Chat.IsPrivate() {
+		if !update.Message.Chat.IsPrivate() { continue }
+		if !update.Message.IsCommand() {
 			log.Printf("UserID: %s (%d)", update.Message.Chat.UserName, updateChatID)
 			if updateText != "" {
 				bot.Send(updateChatID, updateMessageID, "\xF0\x9F\x98\x85 Sorry! Voice notes only...")
@@ -95,20 +96,17 @@ func main() {
 				bot.Send(updateChatID, 0, "Done! \xF0\x9F\x8E\x89")
 			}
 			continue
-		}else{
-			continue
 		}
 
 		var text string
 		switch update.Message.Command() {
 		case "help":
-			text = "Send a voice note to be transcribed."
+			text = "Just send me a voice note to be transcribed."
 		case "start":
-			text = "Send a voice note to be transcribed."
+			text = "Hello there! Send me a voice note to be transcribed."
 		default:
-			text = "Unknown command. Send /help to view the command list."
+			text = "Unknown command."
 		}
-
 		if _, err := bot.Send(updateChatID, updateMessageID, text); err != nil {
 			log.Printf("Error sending message: %v", err)
 		}
